@@ -1,0 +1,779 @@
+[
+  {
+    "job_name": "settlement_intraday",
+    "team": "finance",
+    "impact": "high",
+    "sla_minutes": 30,
+    "normal_rows": 50000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301588",
+    "duration_minutes": 19.56,
+    "rows_processed": 58393,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "settlement_eod",
+    "team": "finance",
+    "impact": "high",
+    "sla_minutes": 60,
+    "normal_rows": 200000,
+    "depends_on": [
+      "settlement_intraday"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301655",
+    "duration_minutes": 47.8,
+    "rows_processed": 235635,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "settlement_reconcile",
+    "team": "finance",
+    "impact": "high",
+    "sla_minutes": 45,
+    "normal_rows": 150000,
+    "depends_on": [
+      "settlement_eod"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301671",
+    "duration_minutes": 36.79,
+    "rows_processed": 147464,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "nostro_reconcile",
+    "team": "finance",
+    "impact": "high",
+    "sla_minutes": 40,
+    "normal_rows": 80000,
+    "depends_on": [
+      "settlement_eod"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301685",
+    "duration_minutes": 24.38,
+    "rows_processed": 91743,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "fx_rate_sync",
+    "team": "finance",
+    "impact": "medium",
+    "sla_minutes": 15,
+    "normal_rows": 5000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301696",
+    "duration_minutes": 8.97,
+    "rows_processed": 4984,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "ledger_update",
+    "team": "finance",
+    "impact": "high",
+    "sla_minutes": 50,
+    "normal_rows": 120000,
+    "depends_on": [
+      "settlement_reconcile"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301709",
+    "duration_minutes": 39.61,
+    "rows_processed": 134782,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "interest_accrual",
+    "team": "finance",
+    "impact": "medium",
+    "sla_minutes": 35,
+    "normal_rows": 90000,
+    "depends_on": [
+      "ledger_update"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301721",
+    "duration_minutes": 21.55,
+    "rows_processed": 95310,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "fee_calculation",
+    "team": "finance",
+    "impact": "medium",
+    "sla_minutes": 25,
+    "normal_rows": 40000,
+    "depends_on": [
+      "settlement_intraday"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301732",
+    "duration_minutes": 19.87,
+    "rows_processed": 45391,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "fraud_signal_agg",
+    "team": "risk",
+    "impact": "high",
+    "sla_minutes": 20,
+    "normal_rows": 300000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301743",
+    "duration_minutes": 11.75,
+    "rows_processed": 296613,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "fraud_model_score",
+    "team": "risk",
+    "impact": "high",
+    "sla_minutes": 25,
+    "normal_rows": 300000,
+    "depends_on": [
+      "fraud_signal_agg"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301755",
+    "duration_minutes": 14.41,
+    "rows_processed": 308463,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "fraud_alert_dispatch",
+    "team": "risk",
+    "impact": "high",
+    "sla_minutes": 10,
+    "normal_rows": 1000,
+    "depends_on": [
+      "fraud_model_score"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301767",
+    "duration_minutes": 5.97,
+    "rows_processed": 1121,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "blacklist_sync",
+    "team": "risk",
+    "impact": "high",
+    "sla_minutes": 15,
+    "normal_rows": 20000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301778",
+    "duration_minutes": 10.34,
+    "rows_processed": 18499,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "velocity_check",
+    "team": "risk",
+    "impact": "medium",
+    "sla_minutes": 20,
+    "normal_rows": 150000,
+    "depends_on": [
+      "fraud_signal_agg"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301790",
+    "duration_minutes": 15.82,
+    "rows_processed": 140084,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "device_fingerprint_sync",
+    "team": "risk",
+    "impact": "medium",
+    "sla_minutes": 30,
+    "normal_rows": 50000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301801",
+    "duration_minutes": 19.34,
+    "rows_processed": 59441,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "chargeback_flag",
+    "team": "risk",
+    "impact": "medium",
+    "sla_minutes": 25,
+    "normal_rows": 8000,
+    "depends_on": [
+      "fraud_model_score"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301813",
+    "duration_minutes": 19.47,
+    "rows_processed": 9412,
+    "status": "failed",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "daily_txn_report",
+    "team": "analytics",
+    "impact": "medium",
+    "sla_minutes": 45,
+    "normal_rows": 500000,
+    "depends_on": [
+      "settlement_eod"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301826",
+    "duration_minutes": 27.75,
+    "rows_processed": 528253,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "weekly_revenue_report",
+    "team": "analytics",
+    "impact": "medium",
+    "sla_minutes": 90,
+    "normal_rows": 800000,
+    "depends_on": [
+      "ledger_update"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301839",
+    "duration_minutes": 68.46,
+    "rows_processed": 841958,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "merchant_summary",
+    "team": "analytics",
+    "impact": "low",
+    "sla_minutes": 60,
+    "normal_rows": 200000,
+    "depends_on": [
+      "daily_txn_report"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301854",
+    "duration_minutes": 42.82,
+    "rows_processed": 213569,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "customer_spend_report",
+    "team": "analytics",
+    "impact": "low",
+    "sla_minutes": 60,
+    "normal_rows": 300000,
+    "depends_on": [
+      "daily_txn_report"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301866",
+    "duration_minutes": 34.8,
+    "rows_processed": 338144,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "channel_performance",
+    "team": "analytics",
+    "impact": "low",
+    "sla_minutes": 45,
+    "normal_rows": 100000,
+    "depends_on": [
+      "daily_txn_report"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301880",
+    "duration_minutes": 27.98,
+    "rows_processed": 97394,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "cohort_analysis",
+    "team": "analytics",
+    "impact": "low",
+    "sla_minutes": 120,
+    "normal_rows": 400000,
+    "depends_on": [
+      "customer_spend_report"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301891",
+    "duration_minutes": 82.6,
+    "rows_processed": 387007,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "revenue_forecast",
+    "team": "analytics",
+    "impact": "medium",
+    "sla_minutes": 75,
+    "normal_rows": 250000,
+    "depends_on": [
+      "weekly_revenue_report"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301904",
+    "duration_minutes": 62.42,
+    "rows_processed": 286941,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "rbi_report_gen",
+    "team": "compliance",
+    "impact": "high",
+    "sla_minutes": 60,
+    "normal_rows": 100000,
+    "depends_on": [
+      "settlement_reconcile",
+      "ledger_update"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301918",
+    "duration_minutes": 49.96,
+    "rows_processed": 122484,
+    "status": "failed",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "aml_screening",
+    "team": "compliance",
+    "impact": "high",
+    "sla_minutes": 45,
+    "normal_rows": 200000,
+    "depends_on": [
+      "fraud_signal_agg"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301932",
+    "duration_minutes": 92.27,
+    "rows_processed": 65214,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "kyc_refresh",
+    "team": "compliance",
+    "impact": "high",
+    "sla_minutes": 50,
+    "normal_rows": 30000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301946",
+    "duration_minutes": 29.92,
+    "rows_processed": 27595,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "sanctions_check",
+    "team": "compliance",
+    "impact": "high",
+    "sla_minutes": 20,
+    "normal_rows": 50000,
+    "depends_on": [
+      "blacklist_sync"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301958",
+    "duration_minutes": 11.94,
+    "rows_processed": 59621,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "audit_log_archive",
+    "team": "compliance",
+    "impact": "medium",
+    "sla_minutes": 40,
+    "normal_rows": 500000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301970",
+    "duration_minutes": 30.99,
+    "rows_processed": 538460,
+    "status": "failed",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "pci_data_mask",
+    "team": "compliance",
+    "impact": "high",
+    "sla_minutes": 35,
+    "normal_rows": 180000,
+    "depends_on": [
+      "audit_log_archive"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301983",
+    "duration_minutes": 23.26,
+    "rows_processed": 187115,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "raw_data_ingestion",
+    "team": "platform",
+    "impact": "high",
+    "sla_minutes": 20,
+    "normal_rows": 1000000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.301996",
+    "duration_minutes": 14.52,
+    "rows_processed": 1108224,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "schema_validation",
+    "team": "platform",
+    "impact": "high",
+    "sla_minutes": 15,
+    "normal_rows": 1000000,
+    "depends_on": [
+      "raw_data_ingestion"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302010",
+    "duration_minutes": 11.51,
+    "rows_processed": 1219817,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "data_quality_check",
+    "team": "platform",
+    "impact": "medium",
+    "sla_minutes": 25,
+    "normal_rows": 500000,
+    "depends_on": [
+      "schema_validation"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302022",
+    "duration_minutes": 15.43,
+    "rows_processed": 597512,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "master_data_sync",
+    "team": "platform",
+    "impact": "medium",
+    "sla_minutes": 30,
+    "normal_rows": 80000,
+    "depends_on": [
+      "schema_validation"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302036",
+    "duration_minutes": 18.12,
+    "rows_processed": 91429,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "delta_compaction",
+    "team": "platform",
+    "impact": "low",
+    "sla_minutes": 45,
+    "normal_rows": 2000000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302049",
+    "duration_minutes": 30.36,
+    "rows_processed": 2472939,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "metadata_catalog_sync",
+    "team": "platform",
+    "impact": "low",
+    "sla_minutes": 20,
+    "normal_rows": 10000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302062",
+    "duration_minutes": 14.06,
+    "rows_processed": 12104,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "retention_cleanup",
+    "team": "platform",
+    "impact": "low",
+    "sla_minutes": 60,
+    "normal_rows": 300000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302074",
+    "duration_minutes": 46.16,
+    "rows_processed": 362671,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "wallet_balance_sync",
+    "team": "product",
+    "impact": "high",
+    "sla_minutes": 10,
+    "normal_rows": 400000,
+    "depends_on": [
+      "settlement_intraday"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302087",
+    "duration_minutes": 7.73,
+    "rows_processed": 384704,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "rewards_calculation",
+    "team": "product",
+    "impact": "medium",
+    "sla_minutes": 30,
+    "normal_rows": 200000,
+    "depends_on": [
+      "fee_calculation"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302100",
+    "duration_minutes": 52.16,
+    "rows_processed": 69622,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "notification_dispatch",
+    "team": "product",
+    "impact": "medium",
+    "sla_minutes": 15,
+    "normal_rows": 50000,
+    "depends_on": [
+      "wallet_balance_sync"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302108",
+    "duration_minutes": 10.95,
+    "rows_processed": 59149,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "statement_generation",
+    "team": "product",
+    "impact": "medium",
+    "sla_minutes": 45,
+    "normal_rows": 150000,
+    "depends_on": [
+      "ledger_update"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302116",
+    "duration_minutes": 29.49,
+    "rows_processed": 179439,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "emi_schedule_update",
+    "team": "product",
+    "impact": "medium",
+    "sla_minutes": 25,
+    "normal_rows": 80000,
+    "depends_on": [
+      "interest_accrual"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302123",
+    "duration_minutes": 17.98,
+    "rows_processed": 94448,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "credit_limit_refresh",
+    "team": "product",
+    "impact": "medium",
+    "sla_minutes": 35,
+    "normal_rows": 100000,
+    "depends_on": [
+      "fraud_model_score"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302130",
+    "duration_minutes": 21.7,
+    "rows_processed": 91872,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "merchant_onboard_sync",
+    "team": "ops",
+    "impact": "medium",
+    "sla_minutes": 30,
+    "normal_rows": 5000,
+    "depends_on": [
+      "kyc_refresh"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302137",
+    "duration_minutes": 17.12,
+    "rows_processed": 6108,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "terminal_health_check",
+    "team": "ops",
+    "impact": "low",
+    "sla_minutes": 20,
+    "normal_rows": 20000,
+    "depends_on": [],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302144",
+    "duration_minutes": 12.3,
+    "rows_processed": 23374,
+    "status": "failed",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "settlement_advice_gen",
+    "team": "ops",
+    "impact": "medium",
+    "sla_minutes": 40,
+    "normal_rows": 30000,
+    "depends_on": [
+      "settlement_reconcile"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302151",
+    "duration_minutes": 32.66,
+    "rows_processed": 33353,
+    "status": "failed",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "dispute_case_update",
+    "team": "ops",
+    "impact": "medium",
+    "sla_minutes": 35,
+    "normal_rows": 8000,
+    "depends_on": [
+      "chargeback_flag"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302159",
+    "duration_minutes": 21.27,
+    "rows_processed": 8153,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "refund_processing",
+    "team": "ops",
+    "impact": "high",
+    "sla_minutes": 20,
+    "normal_rows": 15000,
+    "depends_on": [
+      "settlement_intraday"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302166",
+    "duration_minutes": 16.14,
+    "rows_processed": 17846,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "vendor_payout",
+    "team": "ops",
+    "impact": "high",
+    "sla_minutes": 45,
+    "normal_rows": 25000,
+    "depends_on": [
+      "settlement_eod"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302173",
+    "duration_minutes": 27.1,
+    "rows_processed": 30693,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "interchange_calc",
+    "team": "ops",
+    "impact": "medium",
+    "sla_minutes": 30,
+    "normal_rows": 60000,
+    "depends_on": [
+      "settlement_reconcile"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302180",
+    "duration_minutes": 20.43,
+    "rows_processed": 74291,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "pos_transaction_sync",
+    "team": "ops",
+    "impact": "medium",
+    "sla_minutes": 25,
+    "normal_rows": 180000,
+    "depends_on": [
+      "raw_data_ingestion"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302246",
+    "duration_minutes": 17.14,
+    "rows_processed": 171721,
+    "status": "success",
+    "volume_multiplier": 1.08
+  },
+  {
+    "job_name": "upi_reconcile",
+    "team": "ops",
+    "impact": "high",
+    "sla_minutes": 30,
+    "normal_rows": 400000,
+    "depends_on": [
+      "settlement_intraday"
+    ],
+    "cycle_number": 6,
+    "start_time": "2026-05-31T11:42:42.302254",
+    "duration_minutes": 20.7,
+    "rows_processed": 487449,
+    "status": "success",
+    "volume_multiplier": 1.08
+  }
+]
