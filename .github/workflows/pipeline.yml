@@ -1,0 +1,37 @@
+name: PayWatch Pipeline Check
+
+on: [push]
+
+jobs:
+  pipeline-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install boto3 pandas networkx requests numpy
+
+      - name: Validate engine logic
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from job_config import JOBS
+          print(f'job_config OK — {len(JOBS)} jobs defined')
+          import networkx as nx
+          G = nx.DiGraph()
+          for j in JOBS:
+              for d in j['depends_on']: G.add_edge(d, j['name'])
+          cycles = list(nx.simple_cycles(G))
+          assert not cycles, f'Dependency cycles found: {cycles}'
+          print(f'Dependency graph OK — no cycles, {G.number_of_edges()} edges')
+          "
+
+      - name: Log pipeline execution
+        run: |
+          echo "PayWatch pipeline check at $(date) - commit ${{ github.sha }}"
