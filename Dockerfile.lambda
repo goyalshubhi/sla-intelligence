@@ -1,0 +1,10 @@
+# Packages src/lambda_processor.py as an AWS Lambda container image.
+# Build/push/deploy happens later — this file is not used by `astro dev start`.
+FROM public.ecr.aws/lambda/python:3.11
+
+COPY requirements-lambda.txt .
+RUN pip install -r requirements-lambda.txt
+
+COPY src/lambda_processor.py src/engine.py src/job_config.py ${LAMBDA_TASK_ROOT}/
+
+CMD ["lambda_processor.handler"]

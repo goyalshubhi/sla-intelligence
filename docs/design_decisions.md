@@ -214,4 +214,22 @@ A fresher can read `if actual == expected: correct += 1` and explain it in an in
 **What would change at scale:**
 Convert to pytest with proper fixtures, parametrize decorators, and CI integration. Add property-based testing (Hypothesis) for edge cases. Set up coverage reporting.
 
+---
+
+## Decision 13: Separate Dockerfile for Lambda vs. Astro Runtime
+
+**Decision:** `Dockerfile.lambda` (AWS Lambda base image) is a distinct file from `Dockerfile` (Astro/Airflow runtime), each with its own requirements file (`requirements-lambda.txt` vs `requirements.txt`).
+
+**Options considered:**
+- One shared Dockerfile — Astro's runtime image and AWS's Lambda base image are different, incompatible base images
+- Separate files per deployment target — what we built
+
+**Why this one:**
+The Airflow container needs `apache-airflow-providers-amazon` and runs 24/7 serving the webserver/scheduler. The Lambda container only needs `boto3`, `pandas`, `requests`, `networkx` and runs for seconds every 15 minutes. Mixing the two dependency sets would bloat both images and couple two independently-deployed pieces. `lambda_processor.py` already exposes a `handler(event, context)` function matching Lambda's expected signature — the `if __name__ == "__main__": handler()` block lets the same file run identically both locally and inside Lambda.
+
+**What would change at scale:**
+Build both images in CI (GitHub Actions), push `Dockerfile.lambda`'s image to ECR on every merge to main, and let EventBridge trigger the Lambda on a schedule instead of running `lambda_processor.py` in a local terminal.
+
+---
+
 *End of design decisions log.*

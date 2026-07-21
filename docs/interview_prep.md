@@ -431,4 +431,14 @@ action = f"Fix {root} first — this job recovers automatically"
 
 ---
 
+## "Is this actually deployed to AWS Lambda, or does it just run locally?"
+
+**Honest answer:** `lambda_processor.py` already has a `handler(event, context)` function — the exact signature AWS Lambda calls. Today it runs locally every 15 minutes via `python lambda_processor.py`, which hits the same `handler()` function through `if __name__ == "__main__": handler()`. The container packaging for a real Lambda deployment (`Dockerfile.lambda`, `requirements-lambda.txt`) exists in the repo, but the function hasn't been pushed to ECR / created in Lambda yet — no EventBridge rule exists either.
+
+**Why say this instead of overclaiming:** An interviewer who asks "show me the Lambda function in the console" will find out immediately if you claim it's deployed and it isn't. Saying "the handler is Lambda-ready, packaging is written, deployment is the next step" is defensible and shows you understand the difference between code that *can* run in Lambda and code that *is* running in Lambda.
+
+**What's actually live in AWS right now:** S3 bucket, Glue Catalog + crawler (4 clean tables: `airflow_runs`, `gold_fingerprint`, `gold_job_metrics`, `silver_job_runs`), Athena queries against them, and a confirmed SNS topic (`paywatch-alerts`) with an email subscription.
+
+---
+
 *More sections will be added after each completed step.*
