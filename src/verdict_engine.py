@@ -81,7 +81,7 @@ def send_alert(job, report_text):
             Subject=f"[PayWatch] {job} — incident detected",
             Message=report_text
         )
-        print(f"  Alert sent → SNS + s3://{BUCKET}/{key}")
+        print(f"  Alert sent -> SNS + s3://{BUCKET}/{key}")
     else:
         print(f"  No SNS_TOPIC_ARN set — wrote to s3://{BUCKET}/{key} only")
 

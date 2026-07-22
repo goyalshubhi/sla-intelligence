@@ -232,4 +232,20 @@ Build both images in CI (GitHub Actions), push `Dockerfile.lambda`'s image to EC
 
 ---
 
+## Decision 14: First End-to-End Run Surfaced Four Real Bugs
+
+**Decision:** Fixed all four rather than shipping a "looks complete but never actually ran" pipeline.
+
+**What broke, in the order discovered:**
+1. **Console crash on `→`** — `print()` statements in `engine.py`/`verdict_engine.py` used a unicode arrow. Windows' default console encoding (cp1252) can't render it, so every run crashed *after* the S3 write succeeded but *before* later tables were written. Fix: ASCII `->`.
+2. **2-hour Airflow lookback vs. 30-run minimum** — `read_airflow_task_instances()` only looked back 2 hours, but `MIN_RUNS=30` in `engine.py`. A 15-minute-cadence job produces ~8 runs in 2 hours — it can never cross 30. Fix: made the lookback window configurable (`LOOKBACK_HOURS`, default 24).
+3. **Airflow API silently caps pages at 100** — requesting `limit=3000` still returned only 100 rows per call, regardless of the requested value. Fix: added offset-based pagination.
+4. **JSON array instead of NDJSON** — `df.to_json(orient="records")` writes one JSON array per file. Glue's crawler can't infer per-field columns from that shape without a custom classifier — it just creates a single `array` column, which Athena can't meaningfully query. Fix: `orient="records", lines=True` (newline-delimited JSON), which Glue reads natively.
+
+**Why this matters for the portfolio narrative:** None of these four bugs were visible by reading the code — they only surfaced by actually running the pipeline against real Airflow + S3 + Glue + Athena. "I wrote it" and "I ran it and it worked" are different claims, and an interviewer who asks "walk me through a bug you hit building this" now has a true, specific answer instead of a hypothetical one.
+
+**What would change at scale:** A CI smoke test that runs `lambda_processor.py` against a disposable Airflow/LocalStack environment on every merge would have caught all four before they reached "done."
+
+---
+
 *End of design decisions log.*

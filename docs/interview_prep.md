@@ -437,7 +437,20 @@ action = f"Fix {root} first — this job recovers automatically"
 
 **Why say this instead of overclaiming:** An interviewer who asks "show me the Lambda function in the console" will find out immediately if you claim it's deployed and it isn't. Saying "the handler is Lambda-ready, packaging is written, deployment is the next step" is defensible and shows you understand the difference between code that *can* run in Lambda and code that *is* running in Lambda.
 
-**What's actually live in AWS right now:** S3 bucket, Glue Catalog + crawler (4 clean tables: `airflow_runs`, `gold_fingerprint`, `gold_job_metrics`, `silver_job_runs`), Athena queries against them, and a confirmed SNS topic (`paywatch-alerts`) with an email subscription.
+**What's actually live in AWS right now:** S3 bucket, Glue Catalog + crawler (6 tables: `airflow_runs`, `silver_job_runs`, `gold_job_metrics`, `gold_sla_health`, `gold_deadline_risk`, `gold_fingerprint` — the last only appears when at least one job is at_risk/breached), verified queryable via real Athena SQL (not just "the crawler succeeded"), and a confirmed SNS topic (`paywatch-alerts`) with an email subscription.
+
+---
+
+## "What went wrong the first time you actually ran this end-to-end?"
+
+**This is a better interview answer than "it worked perfectly"** — it shows you can debug, not just write code that compiles. Four real bugs surfaced only once the full pipeline (Airflow → lambda_processor.py → S3 → Glue → Athena) was run for the first time:
+
+1. **Windows console couldn't print a unicode arrow (`→`)** — crashed mid-run, after the first table was written but before the rest. Silent partial failure is worse than a loud one: `gold_job_metrics` existed but nothing downstream did, and there was no error banner to notice.
+2. **2-hour Airflow lookback vs. a 30-run statistical minimum** — a 15-minute job produces ~8 runs in 2 hours, so `verdict` could never leave `insufficient_data`. The bug wasn't in the statistics; it was in how much data got fed to them.
+3. **Airflow's REST API silently truncates `limit=3000` down to 100 rows per call** — the fix (offset-based pagination) then exposed a second problem: per-row S3 lookups that were fine at 100 rows became ~2,000 sequential calls and timed out. Fixed by caching the lookup per job instead of per row.
+4. **`df.to_json(orient="records")` writes a JSON array, and Glue's crawler can't infer columns from that shape** — it silently created a single `array`-typed column instead of failing loudly. The crawler reported `SUCCEEDED` the whole time; the table just wasn't queryable. Switching to NDJSON (`lines=True`) fixed it.
+
+**The throughline:** every one of these failed silently or partially rather than with a clear stack trace pointing at the root cause. See Decision 14 in design_decisions.md for the fixes.
 
 ---
 

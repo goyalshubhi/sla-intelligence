@@ -192,8 +192,8 @@ def write_s3_append(df, prefix):
     s3  = boto3.client("s3", region_name=REGION)
     now = datetime.now()
     key = f"{prefix}/year={now.year}/month={now.month:02d}/day={now.day:02d}/part_{now.strftime('%H%M%S')}.json"
-    s3.put_object(Bucket=BUCKET, Key=key, Body=df.to_json(orient="records", date_format="iso").encode())
-    print(f"  Appended → s3://{BUCKET}/{key}  ({len(df)} rows)")
+    s3.put_object(Bucket=BUCKET, Key=key, Body=df.to_json(orient="records", lines=True, date_format="iso").encode())
+    print(f"  Appended -> s3://{BUCKET}/{key}  ({len(df)} rows)")
 
 
 def write_s3_overwrite(df, prefix):
@@ -203,7 +203,7 @@ def write_s3_overwrite(df, prefix):
     s3      = boto3.client("s3", region_name=REGION)
     staging = f"{prefix}_staging/current.json"
     final   = f"{prefix}/current.json"
-    s3.put_object(Bucket=BUCKET, Key=staging, Body=df.to_json(orient="records", date_format="iso").encode())
+    s3.put_object(Bucket=BUCKET, Key=staging, Body=df.to_json(orient="records", lines=True, date_format="iso").encode())
     s3.copy_object(Bucket=BUCKET, CopySource={"Bucket": BUCKET, "Key": staging}, Key=final)
     s3.delete_object(Bucket=BUCKET, Key=staging)
-    print(f"  Overwrite → s3://{BUCKET}/{final}  ({len(df)} rows)")
+    print(f"  Overwrite -> s3://{BUCKET}/{final}  ({len(df)} rows)")

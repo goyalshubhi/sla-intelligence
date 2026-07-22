@@ -28,23 +28,43 @@ def _airflow_token():
 
 
 def read_airflow_task_instances():
-    """Fetch completed task instances from the last 2 hours via Airflow REST API v2."""
-    headers = {"Authorization": f"Bearer {_airflow_token()}"}
-    cutoff  = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
-    resp    = requests.get(f"{AIRFLOW_URL}/api/v2/dags/~/dagRuns/~/taskInstances",
-                           headers=headers, params={"limit": 500, "start_date_gte": cutoff}, timeout=15)
-    rows = []
-    for ti in resp.json().get("task_instances", []):
-        if ti.get("duration") is None or ti.get("state") != "success":
+    """Fetch completed task instances from the last 24 hours via Airflow REST API v2.
+
+    24h (not 2h) so 15-min-cadence jobs can cross MIN_RUNS=30 within the window;
+    daily jobs (rbi_neft_stats, npci_upi_stats) still need multiple days to warm up.
+    """
+    headers    = {"Authorization": f"Bearer {_airflow_token()}"}
+    lookback_h = int(os.environ.get("LOOKBACK_HOURS", "24"))
+    cutoff     = (datetime.now(timezone.utc) - timedelta(hours=lookback_h)).isoformat()
+
+    # Airflow's API caps each page at 100 regardless of the limit param, so we
+    # page through with offset until we've read everything (or hit the safety cap).
+    task_instances, offset, MAX_ROWS = [], 0, 3000
+    while offset < MAX_ROWS:
+        resp = requests.get(f"{AIRFLOW_URL}/api/v2/dags/~/dagRuns/~/taskInstances",
+                            headers=headers, params={"limit": 100, "offset": offset,
+                            "start_date_gte": cutoff, "state": "success",
+                            "order_by": "-start_date"}, timeout=15)
+        page = resp.json().get("task_instances", [])
+        if not page:
+            break
+        task_instances.extend(page)
+        offset += 100
+
+    rows, rows_processed_cache = [], {}
+    for ti in task_instances:
+        if ti.get("duration") is None:
             continue
         job = ti["dag_id"]
         if job not in _JOBS:
             continue
+        if job not in rows_processed_cache:
+            rows_processed_cache[job] = _get_rows(job)
         rows.append({"job_name": job,
                      "start_time":        ti.get("start_date") or datetime.now(timezone.utc).isoformat(),
                      "duration_minutes":  round(float(ti["duration"]) / 60, 4),
                      "status":            ti["state"],
-                     "rows_processed":    _get_rows(job),
+                     "rows_processed":    rows_processed_cache[job],
                      "team":              _JOBS[job]["team"],
                      "impact":            _JOBS[job]["impact"],
                      "sla_minutes":       _JOBS[job]["sla_minutes"]})
