@@ -454,4 +454,16 @@ action = f"Fix {root} first — this job recovers automatically"
 
 ---
 
+## "How did you prove the fingerprinting actually works on real data, not just synthetic tests?"
+
+**Injected a controlled anomaly and watched PayWatch catch it.** `payment_ops_dags.py` checks two Airflow Variables (`anomaly_job`, `anomaly_multiplier`) at task runtime — setting them widens that one job's simulated duration, no code change or restart needed. I set `anomaly_job=settlement_intraday`, `anomaly_multiplier=8`, triggered one manual DAG run, cleared the variables, and ran `lambda_processor.py` immediately after.
+
+**Result, verified via real Athena SQL:** `settlement_intraday` came back `at_risk` / `logic_bug`. More interestingly, `fee_calculation` — a job whose only relationship to `settlement_intraday` is a `depends_on` entry in `job_config.py`, not a real Airflow task dependency — came back `cascade_failure` (evidence score 75), correctly identifying `settlement_intraday` as the root cause and recommending "fix that first." That's the exact scenario walked through in "THE HARDEST QUESTION" above, except this time it happened on live infrastructure instead of a hypothetical.
+
+**A limitation worth stating honestly:** this only demonstrates the *fingerprinting logic* is wired correctly end-to-end. It doesn't validate the fingerprint types against real production incidents (see Decision 11 — that's still an open question requiring 6-12 months of labelled real incidents).
+
+**Why this matters more than "the tests pass":** the 50 synthetic scenarios in `test_fingerprinting.py` prove the if/elif branches are internally consistent. This proves the *whole pipeline* — Airflow scheduling, S3 writes, the Airflow REST API read, statistical drift detection, the dependency graph traversal, the Glue Catalog, and Athena — correctly carries one real anomaly all the way from "a job ran slow" to "here's who to call and why," with nothing mocked.
+
+---
+
 *More sections will be added after each completed step.*

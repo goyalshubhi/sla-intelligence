@@ -32,6 +32,7 @@ def make_task_callable(job_name, sla_minutes, normal_rows, team):
     def run_job():
         import time, random, boto3, json
         from datetime import datetime
+        from airflow.models import Variable
 
         # Simulate realistic duration: 70% of SLA on average, ±30% variance
         base_seconds    = sla_minutes * 0.7 * 60
@@ -41,8 +42,14 @@ def make_task_callable(job_name, sla_minutes, normal_rows, team):
         if random.random() < 0.05:
             actual_seconds *= random.uniform(1.8, 2.5)
 
-        # Cap sleep at 10 seconds in local dev (don't block the scheduler)
-        time.sleep(min(actual_seconds, 10))
+        # Cap sleep at 10 seconds in local dev (don't block the scheduler).
+        # Set Airflow Variables anomaly_job/anomaly_multiplier to widen this
+        # cap for one job at a time -- a controlled way to demo a real SLA
+        # anomaly without waiting for the 5% random chance to hit.
+        sleep_cap = 10.0
+        if Variable.get("anomaly_job", default_var="") == job_name:
+            sleep_cap *= float(Variable.get("anomaly_multiplier", default_var="1"))
+        time.sleep(min(actual_seconds, sleep_cap))
 
         rows = int(normal_rows * random.uniform(0.88, 1.12))
         event = {

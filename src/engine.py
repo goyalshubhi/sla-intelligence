@@ -64,7 +64,11 @@ def compute_metrics(df):
 def compute_verdicts(metrics_df):
     """Classify each job: safe / at_risk / breached / insufficient_data."""
     def _v(row):
-        if row["time_drift_score"] is None:
+        # pandas silently upcasts a per-row None to NaN once the column also
+        # holds real floats (from other jobs), and `NaN is None` is False --
+        # so this must check pd.isna(), not `is None`, or insufficient-data
+        # jobs slip through as "safe" whenever other jobs have real stats.
+        if pd.isna(row["time_drift_score"]):
             return "insufficient_data"
         if row["latest_duration"] > row["sla_minutes"]:
             return "breached"

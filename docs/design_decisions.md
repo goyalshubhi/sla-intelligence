@@ -241,10 +241,29 @@ Build both images in CI (GitHub Actions), push `Dockerfile.lambda`'s image to EC
 2. **2-hour Airflow lookback vs. 30-run minimum** — `read_airflow_task_instances()` only looked back 2 hours, but `MIN_RUNS=30` in `engine.py`. A 15-minute-cadence job produces ~8 runs in 2 hours — it can never cross 30. Fix: made the lookback window configurable (`LOOKBACK_HOURS`, default 24).
 3. **Airflow API silently caps pages at 100** — requesting `limit=3000` still returned only 100 rows per call, regardless of the requested value. Fix: added offset-based pagination.
 4. **JSON array instead of NDJSON** — `df.to_json(orient="records")` writes one JSON array per file. Glue's crawler can't infer per-field columns from that shape without a custom classifier — it just creates a single `array` column, which Athena can't meaningfully query. Fix: `orient="records", lines=True` (newline-delimited JSON), which Glue reads natively.
+5. **`row["time_drift_score"] is None` silently failing** — found while demoing a controlled anomaly (Decision 15). pandas upcasts a per-row `None` to `NaN` once the column also holds real floats from other jobs, and `NaN is None` is `False` in Python. Every job with too little history to compute real stats then fell through to `"safe"` instead of `"insufficient_data"` — but only once *some* jobs in the same batch had real data, which is why it wasn't caught by the four earlier all-or-nothing test runs. Fix: `pd.isna(...)`.
 
 **Why this matters for the portfolio narrative:** None of these four bugs were visible by reading the code — they only surfaced by actually running the pipeline against real Airflow + S3 + Glue + Athena. "I wrote it" and "I ran it and it worked" are different claims, and an interviewer who asks "walk me through a bug you hit building this" now has a true, specific answer instead of a hypothetical one.
 
 **What would change at scale:** A CI smoke test that runs `lambda_processor.py` against a disposable Airflow/LocalStack environment on every merge would have caught all four before they reached "done."
+
+---
+
+## Decision 15: Airflow Variables for Controlled Anomaly Injection, Not a Code Branch
+
+**Decision:** `payment_ops_dags.py` checks two Airflow Variables (`anomaly_job`, `anomaly_multiplier`) at task runtime to widen one job's sleep cap on demand, instead of hardcoding a one-off test branch or waiting for the existing 5% random-anomaly chance to happen to hit the job being demoed.
+
+**Options considered:**
+- Wait for the built-in 5% random anomaly — realistic, but can't be demoed on command and might hit the wrong job
+- Hardcode `if job_name == "settlement_intraday": actual_seconds *= 3` — works once, then has to be found and reverted by hand, and can't target a different job without editing code again
+- Airflow Variables, checked at runtime — what we built
+
+**Why this one:**
+Airflow Variables are metadata-DB-backed key/value settings, readable and writable via the REST API without restarting any container or redeploying any DAG file. Setting `anomaly_job=settlement_intraday` and `anomaly_multiplier=8`, triggering one manual DAG run, then deleting both variables gives one real, controlled SLA anomaly on one specific job with no lasting change to the DAG's default behavior. It's also a legitimate SRE technique in miniature — this is a simplified form of chaos engineering (deliberately injecting a fault to verify the monitoring system detects it), which is a stronger interview answer than "the tests passed."
+
+**A caveat discovered demoing it:** because the local Airflow scheduler keeps firing every 15 minutes regardless of what else is happening, the injected anomaly is only "latest" for one job until the next scheduled run replaces it. Demoing this requires triggering the anomalous run and then immediately running `lambda_processor.py` (same shell script, no gap) — waiting even a few minutes between them risks a normal scheduled run overwriting the anomalous one as the most recent data point.
+
+**What would change at scale:** A dedicated chaos-testing DAG that injects faults on a schedule and asserts PayWatch detected them within N minutes — turning this manual demo trick into an automated regression test for the monitoring system itself.
 
 ---
 
